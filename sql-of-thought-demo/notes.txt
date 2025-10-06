@@ -1,0 +1,128 @@
+C:\Research\sql-of-thought-demo>npm run start 2
+
+> sql-of-thought-demo@1.0.0 start
+> node --import tsx src/agent.ts 2
+
+
+================================================================================
+🚀 SQL-of-Thought: Multi-agent Text-to-SQL
+================================================================================
+
+📝 Question: Show me the total sales amount for each employee
+
+📥 Loading database schema...
+  Loading schema from: C:/Research/sql-of-thought-demo/data/chinook.db
+  Found tables: [
+  { name: 'albums' },
+  { name: 'artists' },
+  { name: 'customers' },
+  { name: 'employees' },
+  { name: 'genres' },
+  { name: 'invoice_items' },
+  { name: 'invoices' },
+  { name: 'media_types' },
+  { name: 'playlist_track' },
+  { name: 'playlists' },
+  { name: 'sqlite_sequence' },
+  { name: 'sqlite_stat1' },
+  { name: 'tracks' }
+]
+  ✓ Schema loaded: 13 tables
+
+📊 [Schema Linking Agent] Analyzing question...
+  ✓ Identified tables: [ 'employees', 'invoices', 'invoice_items' ]
+
+🧩 [Subproblem Agent] Breaking down query...
+  ✓ Identified clauses: [ 'SELECT', 'FROM', 'JOIN', 'GROUP BY' ]
+
+🤔 [Query Plan Agent] Generating execution plan...
+  ✓ Generated plan with 7 steps
+
+⚡ [SQL Agent] Generating SQL query...
+  ✓ Generated SQL
+
+📄 Generated SQL:
+ SELECT employees.employee_id, employees.first_name, employees.last_name,
+       SUM(invoice_items.quantity * invoice_items.unit_price) AS total_sales
+FROM employees
+JOIN invoices ON employees.employee_id = invoices.employee_id
+JOIN invoice_items ON invoices.invoice_id = invoice_items.invoice_id
+GROUP BY employees.employee_id, employees.first_name, employees.last_name
+ORDER BY total_sales DESC;
+
+⚙️  Executing SQL...
+❌ Query failed: Binder Error: Table "employees" does not have a column named "employee_id"
+
+Candidate bindings: : "EmployeeId"
+
+LINE 4: JOIN chinook.invoices ON employees.employee_id = invoices.employee_id
+                                 ^
+
+🔍 [Correction Plan Agent] Analyzing error...
+  ✓ Error categories: [ 'schema_link.col_missing' ]
+
+🔧 [Correction SQL Agent] Generating corrected SQL...
+  ✓ Generated corrected SQL
+
+📄 Corrected SQL:
+ SELECT
+    employees.EmployeeId,
+    employees.FirstName,
+    employees.LastName,
+    SUM(invoice_items.Quantity * invoice_items.UnitPrice) AS total_sales
+FROM employees
+JOIN invoices
+    ON employees.EmployeeId = invoices.EmployeeId
+JOIN invoice_items
+    ON invoices.InvoiceId = invoice_items.InvoiceId
+GROUP BY
+    employees.EmployeeId,
+    employees.FirstName,
+    employees.LastName
+ORDER BY
+    total_sales DESC;
+
+🔄 Correction attempt 1/2
+
+⚙️  Executing SQL...
+❌ Query failed: Serialization Error: Failed to parse JSON string: {"exception_type
+
+🔍 [Correction Plan Agent] Analyzing error...
+  ✓ Error categories: [ 'schema_link.col_missing' ]
+
+🔧 [Correction SQL Agent] Generating corrected SQL...
+  ✓ Generated corrected SQL
+
+📄 Corrected SQL:
+ SELECT
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    SUM(ii.quantity * ii.unit_price) AS total_sales
+FROM employees AS e
+JOIN invoices AS i
+    ON e.employee_id = i.employee_id
+JOIN invoice_items AS ii
+    ON i.invoice_id = ii.invoice_id
+GROUP BY
+    e.employee_id,
+    e.first_name,
+    e.last_name
+ORDER BY
+    total_sales DESC;
+
+🔄 Correction attempt 2/2
+
+⚙️  Executing SQL...
+❌ Query failed: Binder Error: Table "e" does not have a column named "employee_id"
+
+Candidate bindings: : "EmployeeId"
+
+LINE 8:     ON e.employee_id = i.employee_id
+               ^
+
+⚠️  Max correction attempts reached
+
+================================================================================
+❌ SQL-of-Thought failed
+================================================================================

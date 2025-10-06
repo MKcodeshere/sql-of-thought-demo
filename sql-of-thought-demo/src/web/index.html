@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL-of-Thought: Multi-Agent Text-to-SQL Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 SQL-of-Thought Demo</h1>
+            <p class="subtitle">Multi-Agent Text-to-SQL with Guided Error Correction</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel: Input & Settings -->
+            <div class="panel input-panel">
+                <h2>💬 Ask a Question</h2>
+
+                <div class="input-group">
+                    <label for="api-key">OpenAI API Key:</label>
+                    <input
+                        type="password"
+                        id="api-key"
+                        placeholder="sk-..."
+                        autocomplete="off"
+                    />
+                    <small>Your key is stored locally and never sent to our servers</small>
+                </div>
+
+                <div class="input-group">
+                    <label for="model-select">Model:</label>
+                    <select id="model-select">
+                        <option value="gpt-4o-mini">GPT-4o Mini (Fast, Cheap)</option>
+                        <option value="gpt-4o">GPT-4o (Better Quality)</option>
+                        <option value="gpt-4">GPT-4 (Best Quality)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="question">Natural Language Question:</label>
+                    <textarea
+                        id="question"
+                        rows="3"
+                        placeholder="e.g., What are the top 5 best-selling tracks by revenue?"
+                    ></textarea>
+                </div>
+
+                <div class="example-queries">
+                    <strong>Example Queries:</strong>
+                    <button class="example-btn" data-query="List all customers from USA">Simple: USA Customers</button>
+                    <button class="example-btn" data-query="What are the top 5 best-selling tracks by total revenue?">Medium: Top Tracks</button>
+                    <button class="example-btn" data-query="Show me the total sales amount for each employee">Complex: Employee Sales</button>
+                </div>
+
+                <button id="run-btn" class="primary-btn">
+                    🚀 Run SQL-of-Thought
+                </button>
+
+                <div id="status" class="status-box hidden"></div>
+            </div>
+
+            <!-- Right Panel: Agent Visualization -->
+            <div class="panel agent-panel">
+                <h2>🔄 Agent Pipeline</h2>
+
+                <div class="agent-flow">
+                    <div class="agent-card" id="agent-schema">
+                        <div class="agent-header">
+                            <span class="agent-icon">📊</span>
+                            <span class="agent-name">Schema Linking</span>
+                            <span class="agent-status" id="status-schema">⏸️</span>
+                        </div>
+                        <div class="agent-output" id="output-schema"></div>
+                    </div>
+
+                    <div class="flow-arrow">↓</div>
+
+                    <div class="agent-card" id="agent-subproblem">
+                        <div class="agent-header">
+                            <span class="agent-icon">🧩</span>
+                            <span class="agent-name">Subproblem</span>
+                            <span class="agent-status" id="status-subproblem">⏸️</span>
+                        </div>
+                        <div class="agent-output" id="output-subproblem"></div>
+                    </div>
+
+                    <div class="flow-arrow">↓</div>
+
+                    <div class="agent-card" id="agent-queryplan">
+                        <div class="agent-header">
+                            <span class="agent-icon">🤔</span>
+                            <span class="agent-name">Query Plan (CoT)</span>
+                            <span class="agent-status" id="status-queryplan">⏸️</span>
+                        </div>
+                        <div class="agent-output" id="output-queryplan"></div>
+                    </div>
+
+                    <div class="flow-arrow">↓</div>
+
+                    <div class="agent-card" id="agent-sql">
+                        <div class="agent-header">
+                            <span class="agent-icon">⚡</span>
+                            <span class="agent-name">SQL Generation</span>
+                            <span class="agent-status" id="status-sql">⏸️</span>
+                        </div>
+                        <div class="agent-output" id="output-sql"></div>
+                    </div>
+
+                    <div class="flow-arrow">↓</div>
+
+                    <div class="agent-card" id="agent-execute">
+                        <div class="agent-header">
+                            <span class="agent-icon">⚙️</span>
+                            <span class="agent-name">Execute SQL</span>
+                            <span class="agent-status" id="status-execute">⏸️</span>
+                        </div>
+                        <div class="agent-output" id="output-execute"></div>
+                    </div>
+
+                    <!-- Correction Loop -->
+                    <div class="correction-loop hidden" id="correction-loop">
+                        <div class="flow-arrow loop-arrow">↻</div>
+
+                        <div class="agent-card correction-card" id="agent-correction">
+                            <div class="agent-header">
+                                <span class="agent-icon">🔍</span>
+                                <span class="agent-name">Error Correction</span>
+                                <span class="agent-status" id="status-correction">⏸️</span>
+                            </div>
+                            <div class="agent-output" id="output-correction"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section hidden" id="results-section">
+            <h2>📊 Results</h2>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="results">Query Results</button>
+                <button class="tab-btn" data-tab="sql">Generated SQL</button>
+                <button class="tab-btn" data-tab="metrics">Metrics</button>
+            </div>
+
+            <div class="tab-content active" id="tab-results">
+                <div id="results-table"></div>
+            </div>
+
+            <div class="tab-content" id="tab-sql">
+                <pre><code id="final-sql"></code></pre>
+            </div>
+
+            <div class="tab-content" id="tab-metrics">
+                <div class="metrics-grid" id="metrics-grid"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                Built with ❤️ for <a href="https://arxiv.org/abs/2509.00581" target="_blank">SQL-of-Thought Paper</a> demonstration
+            </p>
+            <p>
+                Database: <strong>Chinook (Music Store)</strong> |
+                Agents: <strong>6 specialized LLM agents</strong> |
+                Error Correction: <strong>Taxonomy-guided (31 error types)</strong>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
