@@ -1,226 +1,218 @@
-# SQL-of-Thought Demo
+# 🌐 SQL-of-Thought Browser Demo
 
-A working demonstration of the [SQL-of-Thought paper](https://arxiv.org/abs/2509.00581) - Multi-agent Text-to-SQL with Guided Error Correction.
+A browser-based demonstration of the SQL-of-Thought multi-agent framework using DuckDB WASM.
 
-## 🎯 Overview
+## Features
 
-This demo implements the SQL-of-Thought framework using:
-- **Multi-agent architecture** with specialized agents
-- **Chain-of-Thought reasoning** for query planning
-- **Taxonomy-guided error correction** loop
-- **DuckDB** for SQL execution
-- **Chinook database** (music store database with 11 tables)
+✅ **100% Browser-Based** - No backend required
+✅ **DuckDB WASM** - SQL execution entirely in the browser
+✅ **Real-time Agent Visualization** - Watch each agent work in real-time
+✅ **Error Correction Loop** - See taxonomy-guided corrections happen live
+✅ **Interactive UI** - Beautiful dark-mode interface with agent flow visualization
 
-## 🏗️ Architecture
+## Quick Start
 
-```
-Question → Schema Linking → Subproblem → Query Plan → SQL Generation
-                                                              ↓
-                                                          Execute
-                                                              ↓
-                                                    Success? → Done
-                                                              ↓ No
-                                            Correction Plan → Correction SQL
-                                                              ↓
-                                                          (Loop back)
-```
-
-### Agents
-
-1. **Schema Linking Agent** - Identifies relevant tables and columns
-2. **Subproblem Agent** - Decomposes query into SQL clauses
-3. **Query Plan Agent** - Creates step-by-step execution plan (CoT)
-4. **SQL Agent** - Generates executable SQL
-5. **Correction Plan Agent** - Analyzes errors using taxonomy
-6. **Correction SQL Agent** - Fixes SQL based on correction plan
-
-## 🚀 Setup
-
-### Prerequisites
-
-- Node.js 18+
-- OpenAI API key (GPT-4o-mini)
-
-### Installation
+### 1. Install Dependencies
 
 ```bash
-cd sql-of-thought-demo
 npm install
 ```
 
-### Configuration
-
-1. Copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
-```
-
-2. Add your OpenAI API key to `.env`:
-```env
-OPENAI_API_KEY=your_key_here
-```
-
-## 📊 Running the Demo
-
-### Test Queries
-
-The demo includes 3 test queries of increasing complexity:
-
-1. **Simple**: "List all customers from USA"
-2. **Medium**: "What are the top 5 best-selling tracks by total revenue?"
-3. **Complex**: "Show me the total sales amount for each employee"
-
-### Run a Query
+### 2. Start the Dev Server
 
 ```bash
-# Run default query (query 0)
-npm start
-
-# Run specific query by index
-npm start 1
-
-# Watch mode for development
-npm run dev
+npm run web
 ```
 
-### Expected Output
+This will open `http://localhost:3000` in your browser.
+
+### 3. Enter Your API Key
+
+- Get an OpenAI API key from https://platform.openai.com/api-keys
+- Enter it in the "OpenAI API Key" field
+- It's stored locally in your browser (never sent to any server except OpenAI)
+
+### 4. Try Example Queries
+
+Click on any of the example query buttons:
+- **Simple**: "List all customers from USA"
+- **Medium**: "What are the top 5 best-selling tracks by total revenue?"
+- **Complex**: "Show me the total sales amount for each employee"
+
+Or write your own!
+
+## How It Works
+
+### Architecture
 
 ```
-🚀 SQL-of-Thought: Multi-agent Text-to-SQL
-================================================================================
-
-📝 Question: What are the top 5 best-selling tracks by total revenue?
-
-📊 [Schema Linking Agent] Analyzing question...
-  ✓ Identified tables: ['tracks', 'invoice_items']
-
-🧩 [Subproblem Agent] Breaking down query...
-  ✓ Identified clauses: ['SELECT', 'FROM', 'JOIN', 'GROUP BY', 'ORDER BY', 'LIMIT']
-
-🤔 [Query Plan Agent] Generating execution plan...
-  ✓ Generated plan with 6 steps
-
-⚡ [SQL Agent] Generating SQL query...
-  ✓ Generated SQL
-
-📄 Generated SQL:
- SELECT t.Name, SUM(ii.UnitPrice * ii.Quantity) as TotalRevenue
- FROM tracks t
- JOIN invoice_items ii ON t.TrackId = ii.TrackId
- GROUP BY t.TrackId, t.Name
- ORDER BY TotalRevenue DESC
- LIMIT 5
-
-⚙️  Executing SQL...
-✅ Query executed successfully!
-📊 Returned 5 rows in 12ms
-
-📋 Results (first 5 rows):
-[
-  { "Name": "The Woman King", "TotalRevenue": 3.98 },
-  ...
-]
+Browser Frontend (Vite + Vanilla JS)
+├── DuckDB WASM (SQL execution in browser)
+├── OpenAI API (Multi-agent LLM calls)
+└── Real-time UI Updates (Agent status visualization)
 ```
 
-## 🌐 Browser Demo (Coming Soon)
+### Agent Flow
 
-The browser demo with DuckDB WASM will allow you to:
-- Input custom questions
-- See live agent execution
-- Visualize the reasoning process
-- View error corrections in real-time
+1. **Schema Linking Agent** 📊
+   - Identifies relevant tables and columns
+   - Extracts schema from DuckDB WASM
 
-## 📁 Project Structure
+2. **Subproblem Agent** 🧩
+   - Breaks query into SQL clauses (SELECT, WHERE, JOIN, etc.)
+
+3. **Query Plan Agent** 🤔
+   - Creates step-by-step execution plan
+   - Uses Chain-of-Thought reasoning
+
+4. **SQL Generation Agent** ⚡
+   - Generates executable SQL from the plan
+
+5. **Execute SQL** ⚙️
+   - Runs query against DuckDB WASM
+   - If error → enters correction loop
+
+6. **Correction Loop** 🔍 (if needed)
+   - **Correction Plan Agent**: Analyzes error using taxonomy
+   - **Correction SQL Agent**: Fixes SQL based on plan
+   - Retries execution (max 3 attempts)
+
+### Database
+
+The demo uses the **Chinook database** (music store):
+- **11 tables**: customers, employees, invoices, tracks, albums, artists, etc.
+- **Relationships**: Complex joins demonstrating real-world scenarios
+- **Loaded via DuckDB WASM**: Entirely in-browser, no server needed
+
+## Development
+
+### File Structure
 
 ```
-sql-of-thought-demo/
-├── src/
-│   ├── agent.ts              # Main orchestrator
-│   ├── tools/
-│   │   ├── schema-tool.ts    # Schema extraction
-│   │   └── sql-executor-tool.ts  # SQL execution
-│   ├── prompts/              # Agent prompts
-│   └── web/                  # Browser interface (WIP)
-├── data/
-│   ├── chinook.db            # Chinook database
-│   └── error-taxonomy.json   # Error categories
-└── scripts/
-    └── convert-db.ts         # SQLite→DuckDB converter
+src/web/
+├── index.html          # Main HTML structure
+├── styles.css          # Dark mode UI styling
+└── app.js              # Agent orchestration + DuckDB WASM logic
 ```
 
-## 🎓 Paper Implementation Details
+### Building for Production
 
-### Key Differences from Paper
-
-- **Model**: GPT-4o-mini instead of Claude Opus (cost-effective)
-- **Error Taxonomy**: Simplified from 31 to 20 most common categories
-- **Correction Loop**: Max 2 attempts (paper uses 3-5)
-- **No self-consistency**: Single generation per step
-
-### Matching Paper Features
-
-✅ Multi-agent decomposition
-✅ Chain-of-Thought query planning
-✅ Taxonomy-guided error correction
-✅ Schema linking
-✅ Subproblem identification
-✅ Iterative correction loop
-
-## 📈 Results
-
-Expected execution accuracy on test queries: ~80-85% (vs 91.59% in paper with Claude Opus)
-
-The accuracy difference is due to:
-- Using GPT-4o-mini vs Claude Opus
-- Simplified error taxonomy
-- Single-pass generation
-
-## 🔧 Customization
-
-### Add Your Own Database
-
-1. Place your SQLite database in `data/`
-2. Update `DB_PATH` in `src/agent.ts`
-3. Run the demo
-
-### Modify Error Taxonomy
-
-Edit `data/error-taxonomy.json` to add/remove error categories.
-
-### Change LLM Model
-
-Update `.env`:
-```env
-OPENAI_MODEL=gpt-4o  # For better accuracy
+```bash
+npm run build
 ```
 
-## 📝 Medium Article
+Output will be in `dist/` directory. Deploy to:
+- GitHub Pages
+- Netlify
+- Vercel
+- Any static hosting
 
-This demo is designed to accompany a Medium article explaining SQL-of-Thought. The article will cover:
+### Customization
 
-1. Why Text-to-SQL is hard
-2. How SQL-of-Thought solves it
-3. Live demo walkthrough
-4. Implementation insights
-5. Cost vs accuracy tradeoffs
+**Change the model:**
+```javascript
+// In app.js, modify the model selection
+const model = 'gpt-4o-mini'; // or 'gpt-4o', 'gpt-4'
+```
 
-## 🤝 Contributing
+**Add more example queries:**
+```html
+<!-- In index.html -->
+<button class="example-btn" data-query="Your query here">
+  Label
+</button>
+```
 
-This is a demo project for educational purposes. Feel free to:
-- Open issues for bugs
-- Suggest improvements
-- Add new features
+**Customize error taxonomy:**
+```javascript
+// Add more error categories in correctionPlanAgent()
+```
 
-## 📚 References
+## Cost Considerations
 
-- [SQL-of-Thought Paper](https://arxiv.org/abs/2509.00581)
-- [Spider Dataset](https://yale-lily.github.io/spider)
-- [Chinook Database](https://github.com/lerocha/chinook-database)
-- [Claude Agent SDK](https://github.com/anthropics/anthropic-sdk-typescript)
+**Approximate costs per query (with GPT-4o-mini):**
+- Simple query: ~$0.01 - $0.02
+- Medium query: ~$0.03 - $0.05
+- Complex query (with corrections): ~$0.08 - $0.15
 
-## 📄 License
+**Token usage:**
+- Schema Linking: ~500-1000 tokens
+- Subproblem: ~300-500 tokens
+- Query Plan: ~800-1500 tokens
+- SQL Generation: ~400-800 tokens
+- Correction (if needed): ~1000-2000 tokens per attempt
 
-MIT License - See LICENSE file for details
+## Troubleshooting
+
+### "DuckDB failed to initialize"
+- Ensure you're using a modern browser (Chrome/Firefox/Edge)
+- Check browser console for detailed errors
+- Try refreshing the page
+
+### "OpenAI API error"
+- Verify your API key is correct
+- Check you have credits in your OpenAI account
+- Ensure the selected model is available to your API key
+
+### "SQL execution failed repeatedly"
+- The correction loop tries 3 times
+- Check the error messages in the Correction Agent output
+- Try simplifying your question
+- Verify the question matches data in the Chinook database
+
+### DuckDB WASM not loading
+- Some browsers block Web Workers
+- Try disabling strict security settings
+- Use Chrome/Firefox for best compatibility
+
+## Browser Compatibility
+
+| Browser | Status |
+|---------|--------|
+| Chrome 90+ | ✅ Fully Supported |
+| Firefox 88+ | ✅ Fully Supported |
+| Edge 90+ | ✅ Fully Supported |
+| Safari 15+ | ⚠️ Partial (WASM limitations) |
+| Mobile | ❌ Not recommended (high memory usage) |
+
+## Performance
+
+**Initial Load:**
+- DuckDB WASM bundle: ~5-10 MB
+- Initialization time: ~2-5 seconds
+
+**Query Execution:**
+- Simple queries: 3-8 seconds (mostly LLM calls)
+- Complex queries: 10-30 seconds (with corrections)
+- SQL execution in DuckDB: <100ms
+
+## Security
+
+- **API Key**: Stored in `localStorage`, only sent to OpenAI
+- **No backend**: All processing happens in your browser
+- **Data privacy**: Database queries never leave your machine
+- **CORS**: OpenAI API calls made directly from browser
+
+## Next Steps
+
+Want to enhance the demo?
+
+1. **Add more databases**: Load different SQLite files
+2. **Add visualization**: Chart.js for result visualization
+3. **Export results**: Download as CSV/JSON
+4. **Add examples**: Pre-loaded complex queries
+5. **Cost tracker**: Show running token costs
+6. **Save queries**: LocalStorage for query history
+
+## Learn More
+
+- 📄 [SQL-of-Thought Paper](https://arxiv.org/abs/2509.00581)
+- 🦆 [DuckDB WASM Docs](https://duckdb.org/docs/api/wasm)
+- 🤖 [OpenAI API Docs](https://platform.openai.com/docs)
+
+## License
+
+MIT License - Free to use for educational and commercial purposes
 
 ---
 
